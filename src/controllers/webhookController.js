@@ -8,7 +8,7 @@ import fs from 'fs';
 const privateKey = config.PRIVATE_KEY;
 function isRequestSignatureValid(req) {
   if(!config.APP_SECRET) {
-    console.warn("App Secret is not set up. Please Add your app secret in /.env file to check for request validation");
+    console.warn("No hay App Secret registrado. Por favor, agregar un app secret en el archivo .env");
     return true;
   }
   
@@ -42,6 +42,7 @@ class WebhookController {
     const senderInfo = req.body.entry?.[0]?.changes[0]?.value?.contacts?.[0];
     
     if (message) {
+      console.log("Mensaje recibido:", message);
       if (message?.type === 'interactive' && message?.interactive.type === 'button_reply') {
         await messageHandler.handleIncomingMessage(message, senderInfo, datosPedido, pedidoStr);
       }

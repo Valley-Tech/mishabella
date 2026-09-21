@@ -8,7 +8,7 @@ export default {
   BUSINESS_PHONE: process.env.BUSINESS_PHONE,
   API_VERSION: process.env.API_VERSION,
   SPREADSHEETID: process.env.SPREADSHEETID,
-  PORT: process.env.PORT || 3001,
+  PORT: process.env.PORT || 3002,
   BASE_URL: process.env.BASE_URL,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   APP_SECRET: process.env.APP_SECRET,

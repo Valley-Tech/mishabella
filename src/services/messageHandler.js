@@ -89,12 +89,12 @@ class MessageHandler {
 }
 
   getSenderName(senderInfo) {
-    return senderInfo.profile?.name || senderInfo.wa_id || "Vallenatos";
+    return senderInfo.profile?.name || senderInfo.wa_id || "Cliente";
   }
 
   async sendWelcomeMessage(to, messageId, senderInfo) {
     const name = this.getSenderName(senderInfo);
-    const welcomeMessage = `¡Hola 🤗 ${name}!\nBienvenid@ a *ValleyTech*🤠\n\nImpulsamos la transformación digital📱 de negocios mediante soluciones de automatización conversacional (Chatbots)🤖\n\n¿En qué te puedo ayudar? 🤔`;
+    const welcomeMessage = `¡Hola 🤗 ${name}!\nBienvenid@ a *Mishabella Store* 🛍\n\n¿En qué te puedo ayudar? 🤔`;
     await whatsappService.sendMessage(to, welcomeMessage, messageId);
   }
 
@@ -102,14 +102,14 @@ class MessageHandler {
     const menuMessage = "Elige una Opción"
     const buttons = [
       {
-        type: 'reply', reply: { id: 'option_1', title: 'Sorteo Chatbot 🎫' }
+        type: 'reply', reply: { id: 'option_1', title: 'Comprar 🛒' }
       },
       {
-        type: 'reply', reply: { id: 'option_2', title: 'Tienda Virtual 🛍' }
+        type: 'reply', reply: { id: 'option_2', title: 'Tienda Virtual 🛍️' }
       },
-      {
-        type: 'reply', reply: { id: 'option_3', title: 'Habla con mIA 🤖' }
-      }
+      // {
+      //   type: 'reply', reply: { id: 'option_3', title: 'Habla con mIA 🤖' }
+      // }
     ];
 
     await whatsappService.sendInteractiveButtons(to, menuMessage, buttons);
@@ -192,13 +192,12 @@ async menuUrl(to) {
     let response;
     switch (option) {
       case 'option_1':
-        this.hiringState[to] = { step: 'boleta' };
-        await this.sendMediaEvento(to);
-        idNumber["numero"] = to;
-        await this.menuUrl(to);
+        await this.catalogo(to);
         break;
       case 'option_2':
-        await this.catalogo(to);
+        this.hiringState[to] = { step: 'boleta' };
+        idNumber["numero"] = to;
+        await this.menuUrl(to);
         break;
       case 'option_3':
         this.assistandState[to] = { step: 'question' };
