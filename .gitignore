@@ -1,10 +1,9 @@
 node_modules/
 .env
-priv.pem
+public.pem
 pub.pem
-public_key.pem
-private_key.pem
-private_key_pkcs8.pem
+private.pem
+private_pkcs8.pem
 *.jpg
 *.png
 *.pdf

@@ -266,3 +266,81 @@ const appendToSheet = async (data, spreadsheetId) => {
 };
 
 export default appendToSheet;
+// ---------------------------------------------------------------------------
+//  Pedidos: actualizar el estado de pago de una fila ya guardada
+// ---------------------------------------------------------------------------
+
+/** Credenciales de la cuenta de servicio (las mismas que usa appendToSheet). */
+function googleAuth() {
+    return new google.auth.GoogleAuth({
+        credentials: {
+            type: process.env.GOOGLE_TYPE,
+            project_id: process.env.GOOGLE_PROJECT_ID,
+            private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID,
+            private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+            client_email: process.env.GOOGLE_CLIENT_EMAIL,
+            client_id: process.env.GOOGLE_CLIENT_ID,
+            auth_uri: process.env.GOOGLE_AUTH_URI,
+            token_uri: process.env.GOOGLE_TOKEN_URI,
+            auth_provider_x509_cert_url: process.env.GOOGLE_AUTH_PROVIDER_X509_CERT_URL,
+            client_x509_cert_url: process.env.GOOGLE_CLIENT_X509_CERT_URL,
+        },
+        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+}
+
+/** Nombre de la hoja de hace N días (las hojas se llaman DD/MM/YYYY). */
+function sheetNameDaysAgo(days) {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}/${d.getFullYear()}`;
+}
+
+/**
+ * Marca el estado de pago (columna I) del último pedido de ese número.
+ *
+ * Se usa cuando Wompi confirma un pago hecho por PSE: la fila ya se guardó
+ * como "Pendiente de pago" y aquí pasa a "Confirmado". Busca en la hoja de
+ * hoy y, si no lo encuentra, en la de ayer (un pago puede confirmarse de
+ * madrugada, cuando ya cambió la hoja del día).
+ */
+export const actualizarEstadoPedido = async (telefono, estado, spreadsheetId) => {
+    try {
+        const authClient = await googleAuth().getClient();
+
+        for (const sheetName of [sheetNameDaysAgo(0), sheetNameDaysAgo(1)]) {
+            let filas;
+            try {
+                const response = await sheets.spreadsheets.values.get({
+                    spreadsheetId,
+                    range: `'${sheetName}'!A:A`,
+                    auth: authClient,
+                });
+                filas = response.data.values || [];
+            } catch {
+                continue; // esa hoja no existe todavía
+            }
+
+            // De abajo hacia arriba: interesa el pedido más reciente.
+            for (let i = filas.length - 1; i >= 0; i -= 1) {
+                if (String(filas[i][0] ?? '').trim() !== String(telefono).trim()) continue;
+                await sheets.spreadsheets.values.update({
+                    spreadsheetId,
+                    range: `'${sheetName}'!I${i + 1}`,
+                    valueInputOption: 'RAW',
+                    resource: { values: [[estado]] },
+                    auth: authClient,
+                });
+                return true;
+            }
+        }
+
+        console.warn(`[pedido] no se encontró fila para ${telefono}; no se actualizó el estado`);
+        return false;
+    } catch (error) {
+        console.error('Error actualizando el estado del pedido:', error.message);
+        return false;
+    }
+};
