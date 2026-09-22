@@ -8,8 +8,8 @@ import crypto from "crypto";
 import fs from "fs";
 import { CRM_MODE, forwardWebhook, toMetaMessage } from '../services/crmAdapter.js';
 
-const privateKey = fs.readFileSync('private.pem', 'utf8'); // Para Local
-// const privateKey = config.PRIVATE_KEY;
+// const privateKey = fs.readFileSync('private.pem', 'utf8'); // Para Local
+const privateKey = config.PRIVATE_KEY;
 function isRequestSignatureValid(req) {
   if(!config.APP_SECRET) {
     console.warn("No hay App Secret registrado. Por favor, agregar un app secret en el archivo .env");
