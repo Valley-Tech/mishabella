@@ -283,7 +283,7 @@ class MessageHandler {
         await this.sendContact(to);
         break;
       default:
-        response = "Oops😔\nPorfa, elige una de las opciones del menú o escribe *Hola* para volver a empezar\nTambién, escribe *Ayuda* para más opciones.";
+        response = "Oops😔\nPorfa, elige una de las opciones del menú o escribe *Hola* para volver a empezar.";
     }
     if (response) {
       await whatsappService.sendMessage(to, response);
