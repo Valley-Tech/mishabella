@@ -175,7 +175,7 @@ class MessageHandler {
     const menuMessage = "Elige una Opción"
     const buttons = [
       { type: 'reply', reply: { id: 'option_1', title: 'Comprar 🛒' } },
-      { type: 'reply', reply: { id: 'option_2', title: 'Tienda Virtual 🛍️' } },
+      { type: 'reply', reply: { id: 'option_2', title: 'Pregúntale a la IA 🤖' } },
       // { type: 'reply', reply: { id: 'option_3', title: 'Habla con mIA 🤖' } }
     ];
 
@@ -266,11 +266,11 @@ class MessageHandler {
       case 'option_1':
         await this.catalogo(to);
         break;
+      // case 'option_2':
+      //   this.hiringState[to] = { step: 'boleta' };
+      //   await this.menuUrl(to);
+      //   break;
       case 'option_2':
-        this.hiringState[to] = { step: 'boleta' };
-        await this.menuUrl(to);
-        break;
-      case 'option_3':
         this.assistandState[to] = { step: 'question' };
         response = 'Realiza tu pregunta: ';
         break;
