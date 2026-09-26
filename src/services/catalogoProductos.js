@@ -88,6 +88,8 @@ async function cargarIndiceShopify(force = false) {
             name: p.title,
             additional_variant_attributes: attrs,
             price: v.price,
+            compare_at_price: v.compare_at_price ?? null,
+            available: v.available !== false,
             image_url: v.featured_image?.src ?? p.images?.[0]?.src ?? null,
             url: p.handle ? `${SHOPIFY_URL}/products/${p.handle}` : null,
             fuente: 'shopify',
@@ -319,4 +321,39 @@ export function formatearPedido(items = []) {
   return formatearLineas(items.map((item) => describirItem(item, cache.get(String(item.product_retailer_id))?.info)));
 }
 
-export default { PRODUCT_NAMES, describirPedido, describirItem, formatearPedido, totalPedido, atributosVariante };
+/**
+ * Resumen del catálogo en texto (para el prompt de la IA): un bloque por
+ * producto con precio, opciones (colores, tallas…) y qué está agotado.
+ * Sale del índice de Shopify, así que refleja la tienda tal como está hoy.
+ */
+export async function resumenCatalogo({ maxChars = 7000 } = {}) {
+  await cargarIndiceShopify();
+  if (shopify.index.size === 0) return '';
+  const groups = new Map();
+  for (const v of shopify.index.values()) {
+    const g = groups.get(v.retailer_product_group_id) ?? { name: v.name, url: v.url, prices: new Set(), opts: new Map(), agotadas: [], total: 0 };
+    g.total += 1;
+    g.prices.add(v.price);
+    for (const a of v.additional_variant_attributes) {
+      if (!g.opts.has(a.key)) g.opts.set(a.key, new Set());
+      g.opts.get(a.key).add(a.value);
+    }
+    if (!v.available) g.agotadas.push(v.additional_variant_attributes.map((a) => a.value).join(' / '));
+    groups.set(v.retailer_product_group_id, g);
+  }
+  const money = (n) => `$${Number(n).toLocaleString('es-CO', { maximumFractionDigits: 0 })}`;
+  const lines = ['CATÁLOGO ACTUAL DE LA TIENDA:'];
+  for (const g of groups.values()) {
+    const prices = [...g.prices].map(money).join(' / ');
+    const opts = [...g.opts.entries()].map(([k, vs]) => `${k}: ${[...vs].join(', ')}`).join(' · ');
+    let estado = 'disponible';
+    if (g.agotadas.length === g.total) estado = 'AGOTADO';
+    else if (g.agotadas.length) estado = `agotado en ${g.agotadas.join('; ')}`;
+    lines.push(`- ${g.name} — ${prices} — ${opts} — ${estado}${g.url ? ` — ${g.url}` : ''}`);
+  }
+  let text = lines.join('\n');
+  if (text.length > maxChars) text = `${text.slice(0, maxChars)}\n(…catálogo recortado)`;
+  return text;
+}
+
+export default { PRODUCT_NAMES, describirPedido, describirItem, formatearPedido, totalPedido, atributosVariante, resumenCatalogo };

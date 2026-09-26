@@ -147,7 +147,40 @@ export function clearSession(token) {
   if (sessions.delete(token)) persist();
 }
 
+/* ------------------------------------------------------- historial de IA */
+// Conversación reciente con la IA por teléfono, para que Gemini recuerde el
+// contexto. Antes vivía en un objeto en memoria y se perdía en cada despliegue.
+
+const CHAT_MAX = 40; // turnos guardados por cliente (20 preguntas + 20 respuestas)
+
+function chatToken(phone) {
+  return `chat:${phone}:0`;
+}
+
+export function getChatHistory(phone, turns = 20) {
+  const session = sessions.get(chatToken(phone));
+  if (!session) return [];
+  return (session.messages ?? []).slice(-turns);
+}
+
+export function appendChat(phone, role, text) {
+  const token = chatToken(phone);
+  const session = sessions.get(token) ?? { token, kind: 'chat', phone, createdAt: Date.now(), messages: [] };
+  session.messages = [...(session.messages ?? []), { role, text: String(text).slice(0, 4000), at: Date.now() }].slice(-CHAT_MAX);
+  session.createdAt = Date.now(); // el TTL cuenta desde el último mensaje
+  sessions.set(token, session);
+  persist();
+  return session;
+}
+
+export function clearChat(phone) {
+  if (sessions.delete(chatToken(phone))) persist();
+}
+
 export default {
+  getChatHistory,
+  appendChat,
+  clearChat,
   createOrder,
   createSorteo,
   getByToken,
