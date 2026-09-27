@@ -55,6 +55,8 @@ class MessageHandler {
       if (this.isGreeting(incomingMessage)) {
         await this.sendWelcomeMessage(message.from, message.id, senderInfo);
         await this.sendWelcomeMenu(message.from);
+      } else if (this.isOrder(incomingMessage)) {
+        await this.handleMenuOption(message.from, 'option_1');
       } else if (this.appointmentState[message.from]) {
         await this.handleAppointmentFlow(message.from, incomingMessage);
       } else if (this.assistandState[message.from]) {
@@ -121,8 +123,34 @@ class MessageHandler {
   }
 
   isGreeting(message) {
-    const greetings = ["hola", "hi", "ok", "listo", "bien", "bueno", "hello", "HL", "Oe", "buenas", "buenos dias", "buenas tardes", "buenas noches", "saludos", "como estás", "hl", "gracias", "muchas gracias"];
-    return greetings.includes(message);
+    const lower = message.toLowerCase();
+    return (
+      lower.includes('hola') ||
+      lower.includes('ole') ||
+      lower.includes('holi') ||
+      lower.includes('hello') ||
+      lower.includes('hl') ||
+      lower.includes('hi') ||
+      lower.includes('buenas') ||
+      lower.includes('buenos dias') ||
+      lower.includes('buenos días') ||
+      lower.includes('buenas tardes') ||
+      lower.includes('buenas noches') ||
+      lower.includes('saludos') ||
+      lower.includes('como estás') ||
+      lower.includes('gracias') ||
+      lower.includes('muchas gracias')
+    );
+  }
+
+  isOrder(message) {
+    const lower = message.toLowerCase();
+    return (
+      lower.includes('pedir') ||
+      lower.includes('pedido') ||
+      lower.includes('orden') ||
+      lower.includes('comprar')
+    );
   }
 
   isQuestion(message) {
