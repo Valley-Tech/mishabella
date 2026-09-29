@@ -311,7 +311,7 @@ class MessageHandler {
         await this.sendContact(to);
         break;
       default:
-        response = "Oops😔\nPorfa, elige una de las opciones del menú o escribe *Hola* para volver a empezar.";
+        this.assistandState[to] = { step: 'question' };
     }
     if (response) {
       await whatsappService.sendMessage(to, response);
@@ -394,7 +394,7 @@ class MessageHandler {
         await this.menuOpcional(to);
         break;
       default:
-        response = "Lo siento 😔 no entendí tu respuesta\nPor Favor, elige una de las opciones del menú.";
+        this.assistandState[to] = { step: 'question' };
     }
     if (response) {
       await whatsappService.sendMessage(to, response);
