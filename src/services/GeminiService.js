@@ -25,13 +25,18 @@ import store from './sessionStore.js';
  *  · auto  → crm si CRM_BASE_URL/CRM_API_KEY están definidos; si el CRM dice
  *            que la IA está apagada o no responde, cae a local.
  *
- * Firma pública sin cambios: geminiAiService(mensaje, telefono).
+ * Por defecto (v2.12) el modo es **crm**: la IA solo responde si en el CRM está
+ * activa y con conocimiento cargado para ESTE chatbot. Si no, geminiAiService
+ * devuelve null y el bot sigue con sus menús, plantillas y flujos de siempre;
+ * ningún bot usa Gemini "por su cuenta" con la clave compartida.
+ *
+ * Firma pública sin cambios: geminiAiService(mensaje, telefono) → texto | null.
  */
 
 const KNOWLEDGE_DIR = path.resolve('./knowledge');
 const HISTORY_TURNS = 20;
 
-const DEFAULT_INSTRUCTIONS = `Eres Misha, la asesora virtual de Mishabella, una tienda de moda colombiana (tenis, baletas, bolsos, conjuntos deportivos, bodies, pijamas) que vende por WhatsApp y en https://mishabellastore.com.
+const DEFAULT_INSTRUCTIONS = `Eres la asesora virtual de Mishabella Store, una tienda de moda colombiana (tenis, baletas, bolsos, conjuntos deportivos, bodies, pijamas) que vende por WhatsApp y en https://mishabellastore.com.
 
 Tu trabajo: resolver dudas de productos (colores, tallas, materiales, precios), envíos, pagos y cambios, y llevar al cliente a comprar. Para comprar, indícale que escriba "Comprar" o toque el botón del menú para ver el catálogo y armar el pedido.
 
@@ -109,20 +114,24 @@ async function localReply(message, userId) {
 
 const FALLBACK = 'Disculpa, estoy teniendo problemas técnicos momentáneamente. Intenta nuevamente en unos segundos 🔧';
 
+const MODE = (config.AI_MODE || 'crm').toLowerCase();
+
 const geminiService = async (userMessage, userId = 'anon') => {
   const text = String(userMessage ?? '').trim();
-  if (!text) return FALLBACK;
+  if (!text) return null;
 
   try {
-    if (config.AI_MODE !== 'local') {
+    if (MODE !== 'local') {
       const fromCrm = await askAi(userId, text);
       if (fromCrm) return fromCrm;
-      if (config.AI_MODE === 'crm') return FALLBACK;
+      // El CRM tiene la IA apagada / sin conocimiento para este bot (o no respondió):
+      // en modo crm no hay respaldo local; el bot sigue con su menú.
+      if (MODE === 'crm') return null;
     }
     return await localReply(text, userId);
   } catch (error) {
-    console.error('[ia] error de Gemini:', error.message);
-    return FALLBACK;
+    console.error('[ia] error de la IA:', error.message);
+    return MODE === 'crm' ? null : FALLBACK;
   }
 };
 

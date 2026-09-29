@@ -55,8 +55,6 @@ class MessageHandler {
       if (this.isGreeting(incomingMessage)) {
         await this.sendWelcomeMessage(message.from, message.id, senderInfo);
         await this.sendWelcomeMenu(message.from);
-      } else if (this.isOrder(incomingMessage)) {
-        await this.handleMenuOption(message.from, 'option_1');
       } else if (this.appointmentState[message.from]) {
         await this.handleAppointmentFlow(message.from, incomingMessage);
       } else if (this.assistandState[message.from]) {
@@ -123,34 +121,8 @@ class MessageHandler {
   }
 
   isGreeting(message) {
-    const lower = message.toLowerCase();
-    return (
-      lower.includes('hola') ||
-      lower.includes('ole') ||
-      lower.includes('holi') ||
-      lower.includes('hello') ||
-      lower.includes('hl') ||
-      lower.includes('hi') ||
-      lower.includes('buenas') ||
-      lower.includes('buenos dias') ||
-      lower.includes('buenos días') ||
-      lower.includes('buenas tardes') ||
-      lower.includes('buenas noches') ||
-      lower.includes('saludos') ||
-      lower.includes('como estás') ||
-      lower.includes('gracias') ||
-      lower.includes('muchas gracias')
-    );
-  }
-
-  isOrder(message) {
-    const lower = message.toLowerCase();
-    return (
-      lower.includes('pedir') ||
-      lower.includes('pedido') ||
-      lower.includes('orden') ||
-      lower.includes('comprar')
-    );
+    const greetings = ["hola", "hi", "ok", "listo", "bien", "bueno", "hello", "HL", "Oe", "buenas", "buenos dias", "buenas tardes", "buenas noches", "saludos", "como estás", "hl", "gracias", "muchas gracias"];
+    return greetings.includes(message);
   }
 
   isQuestion(message) {
@@ -203,7 +175,7 @@ class MessageHandler {
     const menuMessage = "Elige una Opción"
     const buttons = [
       { type: 'reply', reply: { id: 'option_1', title: 'Comprar 🛒' } },
-      { type: 'reply', reply: { id: 'option_2', title: 'Pregúntale a la IA 🤖' } },
+      { type: 'reply', reply: { id: 'option_2', title: 'Tienda Virtual 🛍️' } },
       // { type: 'reply', reply: { id: 'option_3', title: 'Habla con mIA 🤖' } }
     ];
 
@@ -265,7 +237,7 @@ class MessageHandler {
       name: "flow",
       parameters: {
         "flow_message_version": "3",
-        "flow_id": 1936389694432455,
+        "flow_id": config.FLOW_ID_PEDIDO,
         "flow_token": token,
         "flow_cta": "Pedido"
       },
@@ -294,11 +266,11 @@ class MessageHandler {
       case 'option_1':
         await this.catalogo(to);
         break;
-      // case 'option_2':
-      //   this.hiringState[to] = { step: 'boleta' };
-      //   await this.menuUrl(to);
-      //   break;
       case 'option_2':
+        this.hiringState[to] = { step: 'boleta' };
+        await this.menuUrl(to);
+        break;
+      case 'option_3':
         this.assistandState[to] = { step: 'question' };
         response = 'Realiza tu pregunta: ';
         break;
@@ -311,7 +283,7 @@ class MessageHandler {
         await this.sendContact(to);
         break;
       default:
-        this.assistandState[to] = { step: 'question' };
+        response = "Oops😔\nPorfa, elige una de las opciones del menú o escribe *Hola* para volver a empezar\nTambién, escribe *Ayuda* para más opciones.";
     }
     if (response) {
       await whatsappService.sendMessage(to, response);
@@ -394,7 +366,7 @@ class MessageHandler {
         await this.menuOpcional(to);
         break;
       default:
-        this.assistandState[to] = { step: 'question' };
+        response = "Lo siento 😔 no entendí tu respuesta\nPor Favor, elige una de las opciones del menú.";
     }
     if (response) {
       await whatsappService.sendMessage(to, response);
@@ -499,7 +471,7 @@ class MessageHandler {
         estado,                  // I  Estado
         datos.recomendacion ?? '' // J  Recomendaciones
       ];
-      // await appendToSheet(fila, config.SPREADSHEET_PEDIDOS);
+      await appendToSheet(fila, config.SPREADSHEET_PEDIDOS);
       await this.notificarPedido({ to, datos, pedidoStr, total, medio });
     } catch (error) {
       console.error('[pedido] no se pudo guardar en la hoja:', error.message);
@@ -508,12 +480,7 @@ class MessageHandler {
 
   /** Aviso al negocio de que entró un pedido (opcional, ver NOTIFY_NUMBERS). */
   async notificarPedido({ to, datos, pedidoStr, total, medio }) {
-    // if (config.NOTIFY_NUMBERS.length === 0) return;
-    const NOTIFY_NUMBERS = [
-      "573161763710",
-      "573168215994",
-      "573150005667"
-    ]
+    if (config.NOTIFY_NUMBERS.length === 0) return;
 
     const variables = [
       datos.name ?? '',
@@ -524,16 +491,27 @@ class MessageHandler {
       money(total),
     ];
 
-    for (const numero of NOTIFY_NUMBERS) {
-      if (config.NOTIFY_TEMPLATE) {
-        await whatsappService.sendTemplateVariables(numero, config.NOTIFY_TEMPLATE, variables);
-      } else {
-        // Sin plantilla, Meta solo entrega si ese número escribió al bot en
-        // las últimas 24 h. Para avisos confiables, crea una plantilla.
-        await whatsappService.sendMessage(
-          numero,
-          `🛒 *Pedido nuevo*\n\n*Cliente:* ${variables[0]}\n*Celular:* ${variables[1]}\n*Dirección:* ${variables[2]}\n\n${pedidoStr}\n\n*Pago:* ${medio}\n*Total:* ${money(total)}`
-        );
+    if (!config.NOTIFY_TEMPLATE) {
+      // Sin plantilla, Meta solo entrega si ese número le escribió al bot en las
+      // últimas 24 h; si no, el mensaje queda "failed / Re-engagement message"
+      // (error 131047). Para avisos confiables crea la plantilla y ponla en
+      // NOTIFY_TEMPLATE (ver README, "Aviso de pedido nuevo").
+      console.warn('[pedido] NOTIFY_TEMPLATE vacío: el aviso solo llega si el número escribió al bot hace menos de 24 h');
+    }
+
+    for (const numero of config.NOTIFY_NUMBERS) {
+      try {
+        if (config.NOTIFY_TEMPLATE) {
+          await whatsappService.sendTemplateVariables(numero, config.NOTIFY_TEMPLATE, variables, null, config.NOTIFY_TEMPLATE_LANG);
+        } else {
+          await whatsappService.sendMessage(
+            numero,
+            `🛒 *Pedido nuevo*\n\n*Cliente:* ${variables[0]}\n*Celular:* ${variables[1]}\n*Dirección:* ${variables[2]}\n\n${pedidoStr}\n\n*Pago:* ${medio}\n*Total:* ${money(total)}`
+          );
+        }
+      } catch (error) {
+        // El pedido ya está en la hoja: un aviso fallido no debe frenar al resto.
+        console.error(`[pedido] no se pudo avisar a ${numero}:`, error.response?.data?.error?.message ?? error.message);
       }
     }
   }
@@ -735,7 +713,8 @@ ${config.CUENTAS_BANCARIAS}
     if (state.step === 'question') {
       // Se pasa el número como id de sesión: antes iba vacío y todos los
       // clientes compartían el mismo historial con Gemini.
-      response = await geminiAiService(message, to);
+      // null = la IA está apagada o sin conocimiento en el CRM: se responde con el menú.
+      response = (await geminiAiService(message, to)) ?? 'Por ahora no puedo responder preguntas libres 🙈. Elige una opción del menú o escribe *Asesor* y una persona te atiende.';
     }
 
     delete this.assistandState[to];

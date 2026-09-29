@@ -49,6 +49,20 @@ export default {
   PORT: process.env.PORT || 3002,
   BASE_URL: process.env.BASE_URL,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  // --- IA ----------------------------------------------------------------
+  // Modelo de Gemini (si no existe en tu cuenta, el cliente prueba los siguientes).
+  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
+  // Almacén de File Search con los documentos del negocio (ver scripts/conocimiento.mjs).
+  // Si el bot usa el CRM, el conocimiento se administra allí y esto no hace falta.
+  GEMINI_FILE_SEARCH_STORE: process.env.GEMINI_FILE_SEARCH_STORE || '',
+  // 'crm' = pedir la respuesta al CRM (conocimiento + historial centralizados),
+  // 'local' = Gemini directo desde el bot, 'auto' = CRM si está configurado, si no local.
+  // crm (recomendado): la IA solo responde si está activa y con conocimiento en el CRM para este bot.
+  AI_MODE: (process.env.AI_MODE || 'crm').toLowerCase(),
+  AI_MAX_CHARS: Number(process.env.AI_MAX_CHARS || 600),
+  AI_TEMPERATURE: Number(process.env.AI_TEMPERATURE ?? 0.4),
+  // Instrucciones (personalidad + reglas). Si está vacío se lee knowledge/instrucciones.md.
+  AI_INSTRUCTIONS: process.env.AI_INSTRUCTIONS || '',
   APP_SECRET: process.env.APP_SECRET,
   PASSPHRASE: process.env.PASSPHRASE,
   PRIVATE_KEY,
@@ -61,6 +75,15 @@ export default {
   FLOW_ID_PEDIDO: process.env.FLOW_ID_PEDIDO || '1490489532006105',
   // Flow del sorteo / tienda virtual (opción 2 del menú).
   FLOW_ID_SORTEO: process.env.FLOW_ID_SORTEO || '1490489532006105',
+
+  // Catálogo de Meta (sincronizado desde Shopify). Normalmente llega en el
+  // propio pedido (order.catalog_id); esto es solo respaldo.
+  CATALOG_ID: process.env.CATALOG_ID || '',
+  // Tienda Shopify de la que se sincroniza el catálogo. Sus productos publicados
+  // se leen de /products.json (público) para nombrar variantes sin permisos de Meta.
+  SHOPIFY_STORE_URL: process.env.SHOPIFY_STORE_URL || 'https://mishabellastore.com',
+  // Consultar también la Graph API del catálogo (requiere Marketing API + catalog_management).
+  CATALOG_LOOKUP_META: (process.env.CATALOG_LOOKUP_META ?? 'true') !== 'false',
 
   // --- Pedido ------------------------------------------------------------
   // Costo del domicilio. Si es 0, no se suma nada aunque el cliente dé dirección.
@@ -76,11 +99,11 @@ export default {
   // Plantilla aprobada para ese aviso. Sin plantilla, el aviso solo llega si
   // ese número escribió al bot en las últimas 24 h (regla de Meta).
   NOTIFY_TEMPLATE: process.env.NOTIFY_TEMPLATE || '',
+  // Idioma con el que se creó esa plantilla en Meta (es_CO, es, es_MX…).
+  NOTIFY_TEMPLATE_LANG: process.env.NOTIFY_TEMPLATE_LANG || 'es_CO',
 
   // --- Datos de pago del negocio (salen en el mensaje de transferencia) ---
   CUENTAS_BANCARIAS:
     process.env.CUENTAS_BANCARIAS ||
-    `- *Bancolombia Ahorros:* 52300000966
-- *Nequi, Daviplata, Transfiya, Rappipay:* 3157465456
-- *Grupo Aval (Occidente, Bogotá, AVVillas):* 816-81550-0`,
+    `- *Nequi:* 3150005667`,
 };

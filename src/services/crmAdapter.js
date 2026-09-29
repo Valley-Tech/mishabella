@@ -119,8 +119,8 @@ export async function askAi(to, text) {
     return data?.text ?? null;
   } catch (error) {
     const code = error.response?.data?.error?.code ?? error.response?.data?.code;
-    if (error.response?.status === 409 && (code === 'ai_disabled' || code === 'ai_not_configured')) {
-      console.log(`[crm] IA del CRM no disponible (${code}); se usa Gemini local`);
+    if (error.response?.status === 409 && ['ai_disabled', 'ai_no_knowledge', 'ai_not_configured'].includes(code)) {
+      console.log(`[crm] IA no disponible para este chatbot (${code})`);
       return null;
     }
     console.warn('[crm] la IA del CRM no respondió:', describe(error));
