@@ -714,7 +714,7 @@ ${config.CUENTAS_BANCARIAS}
       // Se pasa el número como id de sesión: antes iba vacío y todos los
       // clientes compartían el mismo historial con Gemini.
       // null = la IA está apagada o sin conocimiento en el CRM: se responde con el menú.
-      response = (await geminiAiService(message, to)) ?? 'Por ahora no puedo responder preguntas libres 🙈. Elige una opción del menú o escribe *Asesor* y una persona te atiende.';
+      response = (await geminiAiService(message, to)) ?? 'Estimado cliente, no hemos podido procesar su última solicitud debido a que el texto recibido contiene carácteres o palabras ilegibles. Para poder ayudarle, ¿podría escribirnos nuevamente su consulta de manera más clara? Muchas gracias.';
     }
 
     delete this.assistandState[to];
