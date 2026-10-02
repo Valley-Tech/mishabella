@@ -174,8 +174,8 @@ class MessageHandler {
   async sendWelcomeMenu(to) {
     const menuMessage = "Elige una Opción"
     const buttons = [
-      { type: 'reply', reply: { id: 'option_1', title: 'Comprar 🛒' } },
-      { type: 'reply', reply: { id: 'option_2', title: 'Tienda Virtual 🛍️' } },
+      { type: 'reply', reply: { id: 'option_1', title: 'Tienda Virtual 🛍️' } },
+      // { type: 'reply', reply: { id: 'option_2', title: 'Tienda Virtual 🛍️' } },
       // { type: 'reply', reply: { id: 'option_3', title: 'Habla con mIA 🤖' } }
     ];
 
@@ -267,8 +267,8 @@ class MessageHandler {
         await this.catalogo(to);
         break;
       case 'option_2':
-        this.hiringState[to] = { step: 'boleta' };
-        await this.menuUrl(to);
+        // this.hiringState[to] = { step: 'boleta' };
+        // await this.menuUrl(to);
         break;
       case 'option_3':
         this.assistandState[to] = { step: 'question' };
@@ -283,7 +283,7 @@ class MessageHandler {
         await this.sendContact(to);
         break;
       default:
-        response = "Oops😔\nPorfa, elige una de las opciones del menú o escribe *Hola* para volver a empezar\nTambién, escribe *Ayuda* para más opciones.";
+        this.assistandState[to] = { step: 'question' };
     }
     if (response) {
       await whatsappService.sendMessage(to, response);
@@ -707,7 +707,7 @@ ${config.CUENTAS_BANCARIAS}
     const buttons = [
       { type: 'reply', reply: { id: 'option_4', title: "Si, Gracias" } },
       { type: 'reply', reply: { id: 'option_3', title: 'Hacer otra pregunta' } },
-      { type: 'reply', reply: { id: 'option_5', title: 'Asesor' } }
+      // { type: 'reply', reply: { id: 'option_5', title: 'Asesor' } }
     ];
 
     if (state.step === 'question') {
